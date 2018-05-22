@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="./pure-min.css">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif);
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+      .smaller-font { font-size:14px }
+      body {
+        font-family: 'Droid Serif';
+        font-size: 1.5em;
+      }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: 400;
+        margin-bottom: 0;
+      }
+      .remark-slide-content h1 { font-size: 3em; }
+      .remark-slide-content h2 { font-size: 2em; }
+      .remark-slide-content h3 { font-size: 1.6em; }
+      .footnote {
+        position: absolute;
+        bottom: 3em;
+      }
+      li p { line-height: 1.3em;
+             font-size: 1.1em;
+       }
+      .red { color: #fa0000; }
+      .large { font-size: 2em; }
+      a, a > code {
+        color: rgb(249, 38, 114);
+        text-decoration: none;
+      }
+      code {
+        background: #e7e8e2;
+        border-radius: 5px;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; font-size: 16px }
+      .remark-code-line-highlighted     { background-color: #373832; }
+      .pull-left {
+        float: left;
+        width: 47%;
+      }
+      .pull-right {
+        float: right;
+        width: 47%;
+      }
+      .pull-right ~ p {
+        clear: both;
+      }
+      #slideshow .slide .content code {
+        font-size: 0.8em;
+      }
+      #slideshow .slide .content pre code {
+        font-size: 0.9em;
+        padding: 15px;
+      }
+      .inverse {
+        background: #272822;
+        color: #777872;
+        text-shadow: 0 0 20px #333;
+      }
+      .inverse h1, .inverse h2 {
+        color: #f3f3f3;
+        line-height: 0.8em;
+      }
+
+      /* Slide-specific styling */
+      #slide-inverse .footnote {
+        bottom: 12px;
+        left: 20px;
+      }
+      #slide-how .slides {
+        font-size: 0.9em;
+        position: absolute;
+        top:  151px;
+        right: 140px;
+      }
+      #slide-how .slides h3 {
+        margin-top: 0.2em;
+      }
+      #slide-how .slides .first, #slide-how .slides .second {
+        padding: 1px 20px;
+        height: 90px;
+        width: 120px;
+        -moz-box-shadow: 0 0 10px #777;
+        -webkit-box-shadow: 0 0 10px #777;
+        box-shadow: 0 0 10px #777;
+      }
+      #slide-how .slides .first {
+        background: #fff;
+        position: absolute;
+        top: 20%;
+        left: 20%;
+        z-index: 1;
+      }
+      #slide-how .slides .second {
+        position: relative;
+        background: #fff;
+        z-index: 0;
+      }
+
+
+
+
+      /* Two-column layout */
+      .left-column {
+        color: #777;
+        width: 20%;
+        height: 92%;
+        float: left;
+      }
+        .left-column h2:last-of-type, .left-column h3:last-child {
+          color: #000;
+        }
+      .right-column {
+        width: 75%;
+        float: right;
+        padding-top: 1em;
+      }
+    </style>
+  </head>
+  <body>
+
+<textarea id="source">
+
+class: center, middle, inverse
+
+# Análisis e Implementación
+# de DNS RPZ en la
+# Universidad Nacional de La Plata
+
+Matías Emanuel Ferrigno
+
+Director: Lic. Paula Venosa
+
+Co-Director: Lic. Einar Felipe Lanfranco
+
+---
+
+
+
+.left-column[
+### - Objetivos
+]
+.right-column[
+
+
+- Disminuir la efectividad del malware distribuido por Internet.
+
+- Evaluar alternativas para fortalecer las medidas de seguridad del servicio de DNS en una red de datos.
+
+- Implementar un servicio de resolución de nombres en la UNLP que utilice las metodologías y herramientas analizadas.
+
+- Medir la efectividad del servicio implementado.
+]
+---
+
+
+.left-column[
+  ### - Objetivos
+  ### - Motivación
+]
+.right-column[
+
+- El DNS se convirtió en un servicio indispensable para el funcionamiento de Internet.
+
+- Pero el servicio de DNS es funcional al usuario/software legítimo como al mal intencionado.
+
+- Alrededor del 68% de las organizaciones no monitorean las consultas DNS de sus servidores.
+
+- Interés personal en el área de la Seguridad de los Sistemas de Información.
+
+- Acceso a los recursos necesarios.
+]
+
+---
+.left-column[
+  ### - Objetivos
+  ### - Motivación
+  ### - DNS RPZ
+]
+.right-column[
+
+- Conocido de forma genérica como “DNS firewall”.
+
+- Posibilita a los administradores de redes establecer políticas sobre las transacciones de sus servidores de DNS.
+
+- Permite alterar respuestas a consultas en cualquier nivel dentro de la jerarquía de nombres de acuerdo a las políticas especificadas.
+
+- La información de las políticas se almacenan en zonas válidas de DNS.
+
+#### Ejemplo
+```bash
+Sería posible indicarle a nuestro servidor de DNS que
+para toda consulta por www.google.com retorne la
+dirección IP de www.yahoo.com.
+```
+]
+---
+.left-column[
+  ### - Objetivos
+  ### - Motivación
+  ### - DNS RPZ
+  ### - Casos de uso
+]
+.right-column[
+
+- Bloquear el acceso a un dominio como así también redirigir el tráfico hacia un entorno controlado.
+
+```bash
+fkjsalhfasfaks.ru.rpz.unlp.edu.ar
+CNAME cuarentena.unlp.edu.ar.
+```
+
+- Bloquear que los clientes accedan a aquellos hostnames que hagan referencia a una IP o subred en particular.
+
+```bash
+24.0.2.168.192.rpz-ip.rpz.unlp.edu.ar CNAME .
+```
+
+- Bloquear consultas de DNS cuya resolución involucre un NS en particular.
+
+```bash
+ns.amenaza-example.com.rpz-nsdname.rpz.unlp.edu.ar CNAME .
+```
+
+]
+
+---
+class: middle, inverse, center
+
+# Ejemplo y demo: WannaCry
+
+
+---
+.left-column[
+  ### - Introducción
+]
+.right-column[
+
+- WannaCry es un ransomware que recientemente se propagó por el mundo.
+
+- Explota una vulnerabilidad de Windows en su servicio de SMB (MS17-010).
+
+- Se descubrió que en el mismo código había un mecanismo de apagado de la propagación (kill-switch). Este consiste en verificar la existencia de un dominio:
+
+ - iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com
+
+- Luego, surgieron mutaciones de este malware.
+]
+---
+.left-column[
+  ### - Introducción
+  ### - Selfie
+]
+.right-column[
+![:scale 100%](Wana_Decrypt0r_screenshot.png)
+]
+---
+.left-column[
+  ### - Introducción
+  ### - Selfie
+  ### - Kill-switch
+]
+.right-column[
+```C
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+ LPSTR lpCmdLine, int nShowCmd)
+{
+  void *v4,*v5;
+  int result;
+  CHAR szUrl; // [sp+8h] [bp-50h]@1
+  ...
+  memcpy(&szUrl, "http://www.iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com",
+          0x39u);
+  ...
+  v4 = InternetOpenA(0, 1u, 0, 0, 0);
+  v5 = InternetOpenUrlA(v4, &szUrl, 0, 0, 0x84000000, 0);
+  if ( v5 ) {
+    InternetCloseHandle(v4);
+    InternetCloseHandle(v5);
+    result = 0;
+  } else {
+    InternetCloseHandle(v4);
+    InternetCloseHandle(0);
+    sub_408090();
+    result = 0;
+  }
+  return result;
+}
+```
+]
+---
+
+.left-column[
+  ### - Introducción
+  ### - Selfie
+  ### - Kill-switch
+  ### - Diagrama
+]
+.right-column[
+
+- Se realizarán dos demos que consisten en ejecutar el Ransomware WannaCry en un entorno controlado.
+
+![:scale 100%](laboratorio.png)
+
+]
+---
+.left-column[
+  ### - Introducción
+  ### - Selfie
+  ### - Kill-switch
+  ### - Diagrama
+  ### - Demos
+]
+.right-column[
+
+## Demo 1
+
+- El dominio consultado por WannaCry devuelve NXDOMAIN (Dominio no encontrado).
+
+- El malware se ejecutará.
+
+## Demo 2
+
+- Se alteró la respuesta con una implementación RPZ.
+
+- El dominio devuelve un registro A apuntando a un entorno controlado donde hay un servidor web escuchando en el 80.
+
+- El malware no tendrá efecto.
+]
+
+---
+
+.left-column[
+  ### - Introducción
+  ### - Selfie
+  ### - Kill-switch
+  ### - Diagrama
+  ### - Demos
+  ### - Demo 1
+]
+.right-column[
+
+```bash
+$ dig iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com
+;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN, id: 34111
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+
+;; QUESTION SECTION:
+;iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com. IN A
+...
+```
+
+## [Enlace Demo 1](./NXDOMAIN.webm)
+
+]
+
+---
+
+.left-column[
+  ### - Introducción
+  ### - Selfie
+  ### - Kill-switch
+  ### - Diagrama
+  ### - Demos
+  ### - Demo 1
+  ### - Config. RPZ
+]
+.right-column[
+
+### ¿Cómo protegernos utilizando RPZ?
+
+- Creando una regla:
+ - Disparador: El dominio consultado
+ - Acción: Local-Data (Registro A apuntando a un Walled Garden.)
+
+### Configuración
+#### Zona rpz.fosfovita
+```remark
+$TTL 60
+@            IN    SOA  rpz.fosfovita. root.rpz.fosfovita.  (
+                  2017091003  ; serial
+                          3H  ; refresh
+                          1H  ; retry
+                          1W  ; expiry
+                          1H) ; minimum
+             IN    NS    localhost.
+
+iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com	 A 192.168.14.65
+*.iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com   A 192.168.14.65
+```
+]
+---
+
+.left-column[
+  ### - Introducción
+  ### - Selfie
+  ### - Kill-switch
+  ### - Diagrama
+  ### - Demos
+  ### - Demo 1
+  ### - Config. RPZ
+]
+.right-column[
+
+#### RPZ
+```remark
+response-policy {
+    zone "rpz.fosfovita";
+};
+```
+#### Registro de logs
+```remark
+logging
+{
+    channel rpz_file {
+      file "/var/log/named/rpz.log" versions 3 size 5m;
+    ...
+    };
+    category rpz { rpz_file;  };
+};
+```
+]
+
+---
+
+.left-column[
+  ### - Introducción
+  ### - Selfie
+  ### - Kill-switch
+  ### - Diagrama
+  ### - Demos
+  ### - Demo 1
+  ### - Config. RPZ
+  ### - Demo 2
+]
+.right-column[
+```bash
+$ dig iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 41339
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 3
+
+;; QUESTION SECTION:
+;iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com. IN A
+
+;; ANSWER SECTION:
+iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com. 5 IN A 192.168.14.65
+```
+```bash
+$ telnet www.iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com 80
+ Trying 192.168.14.65...
+ Connected to www.iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com.
+ GET /
+ <html></html>
+ Connection closed by foreign host.
+```
+## [Enlace Demo 2](./LOCAL-DATA.webm)
+]
+---
+class: middle, center, inverse
+
+# Implementación en la UNLP
+
+---
+
+class: middle
+
+## ¿Cómo se configuró RPZ en la UNLP?
+
+### Proveedores de zonas RPZ
+
+- Se utilizó Spamhaus.
+
+- dbl, drop, botnetcc, malware, malware-aggressive.
+
+### anubis.unlp.edu.ar (163.10.0.65)
+
+- Permisivo.
+
+- Registra los eventos del módulo RPZ.
+
+### opendns.cert.unlp.edu.ar (163.10.40.196)
+
+- Restrictivo.
+
+- Registra los eventos del módulo RPZ.
+
+- Además de las zonas de Spamhaus, se incluyó una zona RPZ propia.
+
+---
+
+## ¿Cómo se configuró en la UNLP?
+
+![:scale 100%](diagrama-final-1.png)
+
+
+---
+
+class: middle, inverse
+
+# Siguientes pasos
+
+###   1. Recolectar los registros de log.
+
+###   2. Centralización.
+
+###   3. Proveer un entorno de visualización de los registros de log.
+
+
+---
+class: middle
+
+## Recolección
+
+### Log arrojado por el módulo RPZ
+```Java
+Sep 19 11:16:18 anubis named[6128]: client 163.10.X.Y#51835: view all:
+ rpz QNAME PASSTHRU rewrite xgojpwhiraownaya.sc via
+ xgojpwhiraownaya.sc.botnetcc.rpz.spamhaus.org
+```
+
+### Fluentd
+
+- Recolecta los logs de distintas fuentes.
+
+- JSON.
+
+- Parsing.
+
+- Permite extender el registro corriendo nuestros propios scripts.
+
+ - Se desarrolló un script que interactúa con la API de la base de datos de asignación de bloques y direcciones IP para obtener la Red y Dependencia que corresponde a la IP del cliente.
+
+- Distribuir a distintos almacenamientos.
+
+---
+class: middle
+
+## Recolección
+
+### Una vez procesado
+
+```JSON
+{
+  "_source": {
+    "message": "client 163.10.X.Y#51835: view all: rpz QNAME PASSTHRU rewrite
+     xgojpwhiraownaya.sc via xgojpwhiraownaya.sc.botnetcc.rpz.spamhaus.org",
+    "@timestamp": "2017-09-19T11:16:18-03:00",
+    "@log_name": "service.named.rpz"
+    "ident": "named",
+    "pid": "30944",
+    "host": "anubis",
+    "client": "163.10.X.Y",
+    "dnsbl": "botnetcc",
+    "domain": "xgojpwhiraownaya.sc",
+    "dns_view": "view all",
+    "policy": "QNAME PASSTHRU",
+    "subnet": "163.10.X.0",
+    "mask": "24",
+    "subnet_description": "Dependencia dueña del bloque 163.10.X.0/24",
+  }
+}
+```
+---
+class: middle
+
+## Almacenamiento y visualización
+
+- Cada registro procesado por Fluentd, se almacena en ElasticSearch. Luego está disponible para su visualización en Kibana.
+
+### Kibana
+
+![:scale 100%](kibana-1.png)
+
+---
+
+class: middle, inverse
+
+# A continuación
+
+### 1. Analizar cada registro y agruparlos en incidentes.
+
+### 2. Poner a disposición un panel de gestión de filtros y visualización de los incidentes.
+
+### 3. Reportar al Sistema de Incidentes del CERTUNLP (NGEN).
+
+---
+
+class: middle
+
+## Mi App
+
+### Tecnologías
+
+- Django (Lenguaje Python) y MongoDB
+
+### Diagrama de Flujo
+
+![:scale 100%](flujo.png)
+
+---
+class: middle
+
+## Mi App
+
+### Funcionalidades
+
+- Dashboard 24hs.
+
+- Visualización de cola de logs sin procesar.
+
+- Visualización de Incidentes sin reportar al CERTUNLP.
+
+  - Descarga de evidencia.
+
+  - Visualización panorámica en Kibana.
+
+  - Eliminar incidente.
+
+  - Reportar manualmente al CERTUNLP.
+
+- ABM de listas blancas y de etiquetas.
+
+- Habilitar/Deshabilitar zonas RPZ.
+
+- Reporte automático al CERTUNLP
+
+---
+
+class: middle
+## Mi App
+## [Enlace Demo 3: Por cuestiones de privacidad no es posible mostrar este video.](#26)
+
+
+---
+
+class: middle
+
+## Diagrama final
+
+![:scale 70%](diagrama-final.png)
+
+---
+
+class: middle
+
+## Mi App: Caso de éxito
+
+### Detección de un host crítico y con navegación restringida infectado con Malware
+
+1. Detectó y recolectó eventos RPZ que arrojaban coincidencia con la zona RPZ vinculada a dominios de servidores de C&C.
+
+2. Los eventos fueron agrupados y estructurados en un incidente.
+
+2. El sistema reportó al CERTUNLP por medio de la API del Sistema de gestión de Incidentes (NGEN).
+
+### El sistema de gestión de incidentes del CERTUNLP (NGEN)
+
+- El sistema NGEN notifica al administrador correspondiente luego de recibir el reporte.
+
+- La notificación es vía correo y contiene un adjunto con la evidencia.
+
+---
+
+class: middle
+
+## Mi App: Caso de éxito
+
+![:scale 80%](mail.png)
+
+---
+class: middle
+
+## Mi App: Caso de éxito
+### Evidencia adjunta
+![:scale 60%](Selection_030.jpg)
+
+---
+
+class: middle
+
+## Mi App: Caso de éxito
+- Finalmente, el administrador confirma la infección, aporta la siguiente captura y soluciona el problema.
+
+![:scale 90%](caso1-imagen2.png)
+
+---
+class: inverse, middle, center
+
+# Conclusiones y trabajos futuros
+
+
+---
+class: middle
+## Conclusiones
+
+- Es una metodología efectiva y transparente para el usuario para reducir la distribución y efectividad de un subconjunto de malwares que circula por la red.
+
+- Para la problemática presentada no existe una única medida que sea totalmente efectiva, pero sí se puede aplicar un conjunto de contramedidas.
+
+- Facilita la identificación de incidentes dentro de una red.
+
+- Puede ser útil para detectar incluso casos de hosts infectados con acceso a Internet restringido pero con DNS permitido.
+
+---
+class: middle
+## Trabajos futuros
+
+- Fomentar mediante el dictado de charlas el uso de los servidores de DNS RPZ.
+
+- Como la solución abarca una parcialidad de las transacciones de la Red, se puede implementar algún adaptador para los registros del Bro.
+
+- Investigar metodologías que permitan generar heurísticas basadas en DNS pasivos y/o análisis de tráfico de red para automatizar la incorporación de entradas en una zona RPZ propia.
+
+- Mejorar el desarrollo en cuestiones velocidad de procesamiento de logs y base de datos.
+
+---
+class: inverse, center, middle
+
+# ¿Preguntas?
+
+---
+
+class: inverse, center, middle
+
+# ¡Muchas Gracias!
+
+</textarea>
+
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+     <script type="text/javascript">
+       var hljs = remark.highlighter.engine;
+     </script>
+     <script src="terminal.language.js" type="text/javascript"></script>
+     <script type="text/javascript">
+
+     remark.macros.scale = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+     };
+       var slideshow = remark.create({
+         ratio: '4:3',
+         highlightStyle: 'monokai'
+       });
+       // extract the embedded styling from ansi spans
+       $('code.terminal span.hljs-ansi').replaceWith(function(i, x) {
+         return x.replace(/&lt;(\/?(\w+).*?)&gt;/g, '<$1>')
+       });
+
+
+     </script>
+
+  </body>
+</html>
